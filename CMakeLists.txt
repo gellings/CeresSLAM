@@ -19,24 +19,17 @@ include_directories(include/unicycle_landmarks
 #add_library(utils STATIC
 #)
 
-#add_library(unicycle_landmarks STATIC
-    #src/controller.cpp
-    #src/dynamics.cpp
-    #src/simulator.cpp
-    #src/environment.cpp
-    #src/gtime.cpp
-    #src/datetime.cpp
-    #src/satellite.cpp
-    #src/gnss.cpp
-#)
-#target_include_directories(unicycle_landmarks PUBLIC
-    #include)
-#target_link_libraries(unicycle_landmarks ${YAML_CPP_LIBRARIES} stdc++fs geometry )
+add_library(unicycle_landmarks STATIC
+    src/unicycle_sim/unicycle_sim.cpp
+)
+target_include_directories(unicycle_landmarks PUBLIC
+    include)
+target_link_libraries(unicycle_landmarks ${YAML_CPP_LIBRARIES})
 
 # Build Examples
 include_directories(include ${EIGEN3_INCLUDE_DIRS})
 add_executable(unicycle_sim
     src/examples/unicycle_sim.cpp
     )
-target_link_libraries(unicycle_sim ${YAML_CPP_LIBRARIES})
+target_link_libraries(unicycle_sim unicycle_landmarks ${YAML_CPP_LIBRARIES})
 
