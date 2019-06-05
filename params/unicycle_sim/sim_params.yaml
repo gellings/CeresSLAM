@@ -2,12 +2,12 @@ tmax: 10.
 dt: 0.0004
 seed: 0
 
-vel: 0.5
+x0: [0., 0., 0., 0.5, 1.]
 
 # Random Landmarks
-num_landmarks: 50
+num_landmarks: 5
 xmin: -5
-xmax: 0
-ymin: 5
-ymax: 7
+xmax: 5
+ymin: -5
+ymax: 5
 

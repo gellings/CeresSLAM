@@ -45,7 +45,33 @@ bool UnicycleSimulator::run()
 
 void UnicycleSimulator::dynamics()
 {
-  state_.x() += state_.v() * dt_;
+  // ODE
+  // xdot = v * cos(theta)
+  // ydot = v * sin(theta)
+  // thetadot = omega
+  const double pos_x = state_.x();
+  const double pos_y = state_.y();
+  const double theta = state_.theta();
+  const double v = state_.v();
+  const double omega = state_.omega();
+
+  state_.x() += v * cos(theta) * dt_;
+  state_.y() += v * sin(theta) * dt_;
+  state_.theta() += omega * dt_;
+
+  wrapAngle();
+}
+
+void UnicycleSimulator::wrapAngle()
+{
+  while(state_.theta() > M_PI)
+  {
+    state_.theta() -= 2 * M_PI;
+  }
+  while(state_.theta() < -M_PI)
+  {
+    state_.theta() += 2 * M_PI;
+  }
 }
 
 void UnicycleSimulator::loadParams()
@@ -63,11 +89,8 @@ void UnicycleSimulator::loadParams()
 
   setupLandmarks();
 
-  // Start from 0 for now
-  state_.arr.setZero();
-  double vel;
-  get_yaml_node("vel", param_filename_, vel);
-  state_.v() = vel;
+  // Setup motion model
+  get_yaml_eigen("x0", param_filename_, state_.arr);
 }
 
 void UnicycleSimulator::setupLandmarks()

@@ -18,6 +18,7 @@ class UnicycleSimulator
 
   bool run();
   void dynamics();
+  void wrapAngle();
 
   void loadParams();
   void setupLandmarks();
