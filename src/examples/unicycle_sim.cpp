@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
 
+#include "unicycle_landmarks/full_slam_estimator.h"
 #include "unicycle_landmarks/unicycle_sim.h"
+
 #include "utils/logger.h"
 #include "utils/frame_helper.h"
 
@@ -11,6 +13,10 @@ int main()
   bool show_progress_bar = true;
   UnicycleSimulator sim(sim_params_yaml_file, show_progress_bar);
   Logger log("/tmp/unicycle_sim.bin");
+
+  // Estimator
+  FullSLAMEstimator est;
+  sim.registerEstimator(&est);
 
   // Log landmark info
   log.log(static_cast<double>(sim.num_landmarks_));

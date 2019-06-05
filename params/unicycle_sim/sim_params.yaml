@@ -2,7 +2,7 @@ tmax: 10.
 dt: 0.0004
 seed: 0
 
-x0: [0., 0., 0., 0.5, 1.]
+x0: [0., 0., 0., 0., 1.]
 
 # Random Landmarks
 num_landmarks: 5
@@ -11,3 +11,14 @@ xmax: 5
 ymin: -5
 ymax: 5
 
+# Sensors
+odometry_sensor: True
+velocity_std: 0.
+omega_std: 0.
+
+range_bearing_sensor: True
+range_std: 0.
+min_range: 0.
+max_range: 10.
+bearing_std: 0.
+# min_bearing: 0. # TODO bearing limits?

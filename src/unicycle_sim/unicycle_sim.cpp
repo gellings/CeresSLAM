@@ -4,16 +4,16 @@
 #include "utils/yaml_helpers.h"
 
 UnicycleSimulator::UnicycleSimulator(std::string filename, bool prog_indicator,
-                                     uint64_t seed) :
-  seed_(seed == 0 ? std::chrono::system_clock::now().time_since_epoch().count() : seed),
-  rng_(seed_),
-  uniform_(0.0, 1.0),
-  param_filename_(filename),
-  prog_indicator_(prog_indicator)
+                                     uint64_t seed)
+  : seed_(seed == 0 ?
+              std::chrono::system_clock::now().time_since_epoch().count() :
+              seed)
+  , rng_(seed_)
+  , uniform_(0.0, 1.0)
+  , param_filename_(filename)
+  , prog_indicator_(prog_indicator)
 {
   t_ = 0.;
-  // TODO
-  // seed ...
 
   loadParams();
 }
@@ -24,6 +24,11 @@ UnicycleSimulator::~UnicycleSimulator()
     std::cout << std::endl;
 }
 
+void UnicycleSimulator::registerEstimator(EstimatorBase* estimator)
+{
+  est_ = estimator;
+}
+
 bool UnicycleSimulator::run()
 {
   if (t_ < tmax_ - dt_ / 2.0)  // Subtract half time step to prevent occasional
@@ -31,6 +36,12 @@ bool UnicycleSimulator::run()
   {
     t_ += dt_;
     dynamics();
+
+    if (est_)
+    {
+      sensors();
+    }
+
     if (prog_indicator_)
       prog_.print(t_ / dt_);
     return true;
@@ -49,6 +60,9 @@ void UnicycleSimulator::dynamics()
   // xdot = v * cos(theta)
   // ydot = v * sin(theta)
   // thetadot = omega
+
+  // Note theta is defined as 0 pointing along the x axis, and positive ccw,
+  // toward the y axis
   const double pos_x = state_.x();
   const double pos_y = state_.y();
   const double theta = state_.theta();
@@ -59,19 +73,34 @@ void UnicycleSimulator::dynamics()
   state_.y() += v * sin(theta) * dt_;
   state_.theta() += omega * dt_;
 
-  wrapAngle();
+  state_.theta() = wrapAngle(state_.theta());
 }
 
-void UnicycleSimulator::wrapAngle()
+void UnicycleSimulator::sensors()
 {
-  while(state_.theta() > M_PI)
+  if (odom_sensor_)
   {
-    state_.theta() -= 2 * M_PI;
+    updateOdomSensor();
   }
-  while(state_.theta() < -M_PI)
+
+  if (range_bearing_sensor_)
   {
-    state_.theta() += 2 * M_PI;
+    updateRangeBearingSensor();
   }
+}
+
+double UnicycleSimulator::wrapAngle(double theta)
+{
+  while (theta > M_PI)
+  {
+    theta -= 2 * M_PI;
+  }
+  while (theta <= -M_PI)
+  {
+    theta += 2 * M_PI;
+  }
+
+  return theta;
 }
 
 void UnicycleSimulator::loadParams()
@@ -85,12 +114,25 @@ void UnicycleSimulator::loadParams()
   srand(seed_);
 
   if (prog_indicator_)
-    prog_.init(std::round(tmax_/dt_), 40);
+    prog_.init(std::round(tmax_ / dt_), 40);
 
   setupLandmarks();
 
   // Setup motion model
   get_yaml_eigen("x0", param_filename_, state_.arr);
+
+  // Setup sensors
+  get_yaml_node("odometry_sensor", param_filename_, odom_sensor_);
+  if (odom_sensor_)
+  {
+    initOdomSensor();
+  }
+
+  get_yaml_node("range_bearing_sensor", param_filename_, range_bearing_sensor_);
+  if (range_bearing_sensor_)
+  {
+    initRangeBearingSensor();
+  }
 }
 
 void UnicycleSimulator::setupLandmarks()
@@ -115,4 +157,57 @@ void UnicycleSimulator::setupLandmarks()
     // random y
     landmarks_(i, 1) = (ymax - ymin) * uniform_(rng_) + ymin;
   }
+}
+
+void UnicycleSimulator::initOdomSensor()
+{
+  get_yaml_node("velocity_std", param_filename_, odom_vel_std_);
+  get_yaml_node("omega_std", param_filename_, odom_omega_std_);
+
+  odom_R_.setZero();
+  odom_R_(0, 0) = odom_vel_std_ * odom_vel_std_;
+  odom_R_(1, 1) = odom_omega_std_ * odom_omega_std_;
+}
+
+void UnicycleSimulator::updateOdomSensor()
+{
+  odom_meas_(0) = state_.v();
+  odom_meas_(1) = state_.omega();
+
+  est_->odometryCallback(t_, odom_meas_, odom_R_);
+}
+
+void UnicycleSimulator::initRangeBearingSensor()
+{
+  get_yaml_node("range_std", param_filename_, rbs_range_std_);
+  get_yaml_node("min_range", param_filename_, rbs_min_range_);
+  get_yaml_node("max_range", param_filename_, rbs_max_range_);
+  get_yaml_node("bearing_std", param_filename_, rbs_bearing_std_);
+
+  rbs_meas_.reserve(num_landmarks_);
+  rbs_meas_.range_variance = rbs_range_std_ * rbs_range_std_;
+  rbs_meas_.bearing_variance = rbs_bearing_std_ * rbs_bearing_std_;
+  rbs_meas_.min_range = rbs_min_range_;
+  rbs_meas_.max_range = rbs_max_range_;
+}
+
+void UnicycleSimulator::updateRangeBearingSensor()
+{
+  rbs_meas_.clear();
+
+  for (unsigned int i = 0; i < num_landmarks_; i++)
+  {
+    // calc range
+    const double x_diff = landmarks_(i, 0) - state_.x();
+    const double y_diff = landmarks_(i, 1) - state_.y();
+    const double range = sqrt(x_diff * x_diff + y_diff * y_diff);
+    rbs_meas_.ranges.push_back(range);
+
+    // calc bearing
+    const double ang_to_lm = atan2(y_diff, x_diff);
+    const double bearing = ang_to_lm - state_.theta();
+    rbs_meas_.bearings.push_back(wrapAngle(bearing));
+  }
+
+  est_->rangeBearingCallback(t_, rbs_meas_);
 }
