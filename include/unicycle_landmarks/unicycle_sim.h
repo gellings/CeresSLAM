@@ -49,9 +49,10 @@ public:
   uint64_t seed_;
   std::default_random_engine rng_;
   std::uniform_real_distribution<double> uniform_;
+  std::normal_distribution<double> normal_;
 
   // Estimator
-  EstimatorBase* est_ = nullptr;
+  EstimatorBase* est_;
 
   // Landmarks
   int num_landmarks_;

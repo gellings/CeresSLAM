@@ -10,9 +10,11 @@ UnicycleSimulator::UnicycleSimulator(std::string filename, bool prog_indicator,
               seed)
   , rng_(seed_)
   , uniform_(0.0, 1.0)
+  , normal_(0., 1.)
   , param_filename_(filename)
   , prog_indicator_(prog_indicator)
 {
+  est_ = nullptr;
   t_ = 0.;
 
   loadParams();
@@ -171,8 +173,8 @@ void UnicycleSimulator::initOdomSensor()
 
 void UnicycleSimulator::updateOdomSensor()
 {
-  odom_meas_(0) = state_.v();
-  odom_meas_(1) = state_.omega();
+  odom_meas_(0) = state_.v() + odom_vel_std_ * normal_(rng_);
+  odom_meas_(1) = state_.omega() + odom_omega_std_ * normal_(rng_);
 
   est_->odometryCallback(t_, odom_meas_, odom_R_);
 }
@@ -201,12 +203,14 @@ void UnicycleSimulator::updateRangeBearingSensor()
     const double x_diff = landmarks_(i, 0) - state_.x();
     const double y_diff = landmarks_(i, 1) - state_.y();
     const double range = sqrt(x_diff * x_diff + y_diff * y_diff);
-    rbs_meas_.ranges.push_back(range);
+    const double range_meas = range + rbs_range_std_ * normal_(rng_);
+    rbs_meas_.ranges.push_back(range_meas);
 
     // calc bearing
     const double ang_to_lm = atan2(y_diff, x_diff);
     const double bearing = ang_to_lm - state_.theta();
-    rbs_meas_.bearings.push_back(wrapAngle(bearing));
+    const double bearing_meas = bearing + rbs_bearing_std_ * normal_(rng_);
+    rbs_meas_.bearings.push_back(wrapAngle(bearing_meas));
   }
 
   est_->rangeBearingCallback(t_, rbs_meas_);
