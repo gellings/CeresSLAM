@@ -1,5 +1,13 @@
 tmax: 10.
 dt: 0.0004
+seed: 0
 
 vel: 0.5
+
+# Random Landmarks
+num_landmarks: 50
+xmin: -5
+xmax: 0
+ymin: 5
+ymax: 7
 

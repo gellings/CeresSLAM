@@ -11,10 +11,15 @@ np.set_printoptions(linewidth=150)
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
+data = np.fromfile("/tmp/unicycle_sim.bin", dtype=np.float64)
+NUM_LANDMARKS = int(data[0])
+LANDMARKS = 2 * NUM_LANDMARKS
+landmarks = np.reshape(data[1 : 1 + LANDMARKS], (2, NUM_LANDMARKS)).T
+
 UNI_STATE = 5
 LOG_WIDTH = 1 + UNI_STATE
 
-data = np.reshape(np.fromfile("/tmp/unicycle_sim.bin", dtype=np.float64), (-1, LOG_WIDTH)).T
+data = np.reshape(data[1+LANDMARKS :], (-1, LOG_WIDTH)).T
 
 # check for NAns
 if (np.any(np.isnan(data))):
@@ -28,8 +33,7 @@ pw = plotWindow()
 f = plt.figure(dpi=150)
 plt.plot()
 plt.plot(uni_state[0,:], uni_state[1,:], label="True $x$")
-# plt.plot(xc[1,:], xc[0,:], label=r"UAV $x_c$")
-# plt.plot(x_veh[1,:], x_veh[0,:], label=r"Veh $x$")
+plt.plot(landmarks[:,0], landmarks[:,1], "rs", label="Landmarks")
 plt.legend()
 pw.addPlot("2D Position", f)
 

@@ -12,6 +12,10 @@ int main()
   UnicycleSimulator sim(sim_params_yaml_file, show_progress_bar);
   Logger log("/tmp/unicycle_sim.bin");
 
+  // Log landmark info
+  log.log(static_cast<double>(sim.num_landmarks_));
+  log.logVectors(sim.landmarks_);
+
   while (sim.run())
   {
     //std::cout << "step" << std::endl;

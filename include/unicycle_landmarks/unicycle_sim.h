@@ -1,5 +1,8 @@
 #pragma once
 
+#include <random>
+#include <vector>
+
 #include "unicycle_landmarks/state.h"
 
 #include "utils/progress_bar.h"
@@ -17,6 +20,7 @@ class UnicycleSimulator
   void dynamics();
 
   void loadParams();
+  void setupLandmarks();
 
   ProgressBar prog_;
   bool prog_indicator_;
@@ -28,6 +32,12 @@ class UnicycleSimulator
   double t_;
   State state_;
 
+  // Random number Generation
+  uint64_t seed_;
+  std::default_random_engine rng_;
+  std::uniform_real_distribution<double> uniform_;
 
-
+  // Landmarks
+  int num_landmarks_;
+  Eigen::MatrixXd landmarks_;
 };
