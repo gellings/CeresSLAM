@@ -19,6 +19,22 @@ include_directories(include/unicycle_landmarks
 #add_library(utils STATIC
 #)
 
+# One dimension 
+add_library(one_dimension STATIC
+    src/one_dimension/one_dimension_sim.cpp
+)
+target_include_directories(one_dimension PUBLIC
+    include)
+target_link_libraries(one_dimension ${YAML_CPP_LIBRARIES})
+
+# Build Examples
+include_directories(include ${EIGEN3_INCLUDE_DIRS})
+add_executable(one_dimension_example
+    src/examples/one_dimension.cpp
+    )
+target_link_libraries(one_dimension_example one_dimension ${YAML_CPP_LIBRARIES})
+
+# Unicycle
 add_library(unicycle_landmarks STATIC
     src/unicycle_sim/unicycle_sim.cpp
 )
