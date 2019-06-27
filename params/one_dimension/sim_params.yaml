@@ -1,19 +1,19 @@
 tmax: 10.
-dt: 0.0004
-seed: 0
+dt: 1.
+seed: 1
 
-x0: [0., 5.]
+x0: [0., 3.]
 
 # Random Landmarks
-num_landmarks: 5
-xmin: 5
-xmax: 50
+num_landmarks: 1
+xmin: 0
+xmax: 0
 
 # Sensors
 odometry_sensor: True
-velocity_std: 0.01
+velocity_std: 0.0
 
 range_sensor: True
-range_std: 0.
+range_std: 1.
 min_range: 0.
 max_range: 10.
