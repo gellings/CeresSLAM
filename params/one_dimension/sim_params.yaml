@@ -1,6 +1,6 @@
 tmax: 10.
 dt: 1.
-seed: 1
+seed: 0
 
 x0: [0., 3.]
 
@@ -10,6 +10,9 @@ xmin: 0
 xmax: 0
 
 # Sensors
+position_sensor: True
+position_std: 0.1
+
 odometry_sensor: True
 velocity_std: 0.0
 

@@ -9,19 +9,20 @@
 
 using std::vector;
 
-void printState(const vector<double>& odom_readings,
-                const vector<double>& range_readings)
+void printState(const vector<double>& position_meas,
+                const vector<double>& position_optimized)
 {
+  const double true_vel = 3.;
   double robot_location = 0.;
-  printf("pose: location     odom    range  r.error  o.error\n");
-  for (int i = 0; i < odom_readings.size(); i++)
+  printf("pose: position    meas     optimized\n");
+  for (int i = 0; i < position_meas.size(); i++)
   {
-    robot_location += odom_readings[i];
-    const double range_err = 0.;
-    const double odom_err = 0.;
-    printf("%4d: %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-           static_cast<int>(i), robot_location, odom_readings[i],
-           range_readings[i], range_err, odom_err);
+    robot_location += true_vel;
+    double optimized_err = abs(robot_location - position_optimized[i]);
+
+    printf("%4d: %8.3f %8.3f %8.3f %8.3f\n", static_cast<int>(i),
+           robot_location, position_meas[i], position_optimized[i],
+           optimized_err);
   }
 }
 
@@ -42,16 +43,15 @@ int main()
 
   while (sim.run())
   {
-    // std::cout << "step" << std::endl;
     log.log(sim.t_);
     log.logVectors(sim.state_.arr);
   }
   printf("Initial values:\n");
-  printState(est.odom_values, est.range_readings);
+  printState(est.position_meas, est.position_optimized);
 
   est.solve();
   printf("Final values:\n");
-  printState(est.odom_values, est.range_solved);
+  printState(est.position_meas, est.position_optimized);
 
   return 0;
 }

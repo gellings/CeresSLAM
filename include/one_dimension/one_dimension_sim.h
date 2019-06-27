@@ -31,6 +31,8 @@ public:
   void setupLandmarks();
 
   // Sensors
+  void initPositionSensor();
+  void updatePositionSensor();
   void initOdomSensor();
   void updateOdomSensor();
   void initRangeSensor();
@@ -59,13 +61,19 @@ public:
   int num_landmarks_;
   Eigen::VectorXd landmarks_;
 
+  // Position Sensor
+  bool position_sensor_;
+  double position_stddev_;
+  double position_R_;
+  double position_meas_;
+
   // Odometry Sensor
   bool odom_sensor_;
   double odom_vel_std_;
   double odom_R_;
   double odom_meas_;
 
-  // Range Bearing Sensor
+  // Range Sensor
   bool range_sensor_;
   double range_std_;
   double min_range_;

@@ -69,6 +69,11 @@ void OneDimensionSimulator::dynamics()
 
 void OneDimensionSimulator::sensors()
 {
+  if (position_sensor_)
+  {
+    updatePositionSensor();
+  }
+
   if (odom_sensor_)
   {
     updateOdomSensor();
@@ -99,6 +104,12 @@ void OneDimensionSimulator::loadParams()
   get_yaml_eigen("x0", param_filename_, state_.arr);
 
   // Setup sensors
+  get_yaml_node("position_sensor", param_filename_, position_sensor_);
+  if (position_sensor_)
+  {
+    initPositionSensor();
+  }
+
   get_yaml_node("odometry_sensor", param_filename_, odom_sensor_);
   if (odom_sensor_)
   {
@@ -129,6 +140,20 @@ void OneDimensionSimulator::setupLandmarks()
     // random x
     landmarks_(i) = (xmax - xmin) * uniform_(rng_) + xmin;
   }
+}
+
+void OneDimensionSimulator::initPositionSensor()
+{
+  get_yaml_node("position_std", param_filename_, position_stddev_);
+
+  position_R_ = position_stddev_ * position_stddev_;
+}
+
+void OneDimensionSimulator::updatePositionSensor()
+{
+  position_meas_ = state_.x() + position_stddev_ * normal_(rng_);
+
+  est_->positionCallback(t_, position_meas_, position_R_);
 }
 
 void OneDimensionSimulator::initOdomSensor()
