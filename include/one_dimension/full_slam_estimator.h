@@ -3,7 +3,7 @@
 #include "one_dimension/estimator_base.h"
 #include "one_dimension/range_meas.h"
 //#include "one_dimension/factors/odometry_constraint.h"
-//#include "one_dimension/factors/range_constraint.h"
+#include "one_dimension/factors/range_constraint.h"
 #include "one_dimension/factors/position_constraint.h"
 #include "one_dimension/factors/velocity_constraint.h"
 
@@ -28,15 +28,20 @@ public:
   virtual void odometryCallback(const double& t, const double& z,
                                 const double& R)
   {
-    //odom_R_ = R;
-    //odom_values.push_back(z);
+    // odom_R_ = R;
+    // odom_values.push_back(z);
   }
 
   virtual void rangeCallback(const double& t, const RangeMeas& z)
   {
-    //range_stddev_ = sqrt(z.range_variance);
-    //const double range_value = z.ranges[0];
-    //range_readings.push_back(range_value);
+    range_stddev_ = sqrt(z.range_variance);
+    range_meas.push_back(z.ranges);
+
+    if (num_landmarks == 0)
+    {
+      num_landmarks = range_meas[0].size();
+      landmarks_optimized = vector<double>(num_landmarks, 0.);
+    }
   }
 
   void solve()
@@ -49,9 +54,9 @@ public:
     for (int i = 0; i < position_meas.size(); i++)
     {
       // Create and add a cost for the position Contraint for pose i
-      problem.AddResidualBlock(
-          PositionConstraint::Create(position_meas[i], position_stddev_), NULL,
-          &position_optimized[i]);
+      //problem.AddResidualBlock(
+          //PositionConstraint::Create(position_meas[i], position_stddev_), NULL,
+          //&position_optimized[i]);
 
       if (i > 0)
       {
@@ -59,6 +64,17 @@ public:
         problem.AddResidualBlock(VelocityConstraint::Create(velocity_stddev),
                                  NULL, &(position_optimized[i - 1]),
                                  &(position_optimized[i]), &velocity_optimized);
+      }
+
+      // Landmark constraints
+      for (int lm_idx = 0; lm_idx < num_landmarks; lm_idx++)
+      {
+        if (range_meas[i][lm_idx] > 0.)
+        {
+          problem.AddResidualBlock(
+              RangeConstraint::Create(range_meas[i][lm_idx], range_stddev_),
+              NULL, &(position_optimized[i]), &(landmarks_optimized[lm_idx]));
+        }
       }
     }
 
@@ -69,7 +85,7 @@ public:
     printf("Solving...\n");
     Solve(solver_options, &problem, &summary);
     printf("Done.\n");
-    //std::cout << summary.FullReport() << "\n";
+    // std::cout << summary.FullReport() << "\n";
     std::cout << "Final odom: " << velocity_optimized << std::endl;
   }
 
@@ -80,11 +96,13 @@ public:
   vector<double> position_meas;
   vector<double> position_optimized;
 
-  //double odom_R_;
-  //vector<double> odom_values;
+  int num_landmarks = 0;
+  vector<double> landmarks_optimized;
 
-  //double range_stddev_;
-  //vector<double> range_readings;
-  //vector<double> range_solved;
+  // double odom_R_;
+  // vector<double> odom_values;
+
+  double range_stddev_;
+  vector<vector<double>> range_meas;
 };
 

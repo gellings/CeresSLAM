@@ -59,7 +59,7 @@ public:
 
   // Landmarks
   int num_landmarks_;
-  Eigen::VectorXd landmarks_;
+  std::vector<double> landmarks_;
 
   // Position Sensor
   bool position_sensor_;

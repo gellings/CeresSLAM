@@ -6,7 +6,7 @@ using ceres::AutoDiffCostFunction;
 
 struct RangeConstraint
 {
-  typedef AutoDiffCostFunction<RangeConstraint, 1, 1> RangeCostFunction;
+  typedef AutoDiffCostFunction<RangeConstraint, 1, 1, 1> RangeCostFunction;
 
   RangeConstraint(double range_meas, double range_stddev)
     : range_meas(range_meas), range_stddev(range_stddev)
@@ -14,9 +14,14 @@ struct RangeConstraint
   }
 
   template <typename T>
-  bool operator()(const T* const position, T* residual) const
+  bool operator()(const T* const position, const T* const lm_pos,
+                  T* residual) const
   {
-    *residual = (*position - range_meas) / range_stddev;
+    // TODO why the heck wont it work if I use absolute value
+    // For now assume that we only measure the range when the landmark is in
+    // front of us
+    *residual = ((*lm_pos - *position) - range_meas) / range_stddev;
+
     return true;
   }
 

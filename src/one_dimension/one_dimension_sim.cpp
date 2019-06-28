@@ -138,7 +138,7 @@ void OneDimensionSimulator::setupLandmarks()
   for (unsigned int i = 0; i < num_landmarks_; i++)
   {
     // random x
-    landmarks_(i) = (xmax - xmin) * uniform_(rng_) + xmin;
+    landmarks_[i] = (xmax - xmin) * uniform_(rng_) + xmin;
   }
 }
 
@@ -189,9 +189,14 @@ void OneDimensionSimulator::updateRangeSensor()
   for (unsigned int i = 0; i < num_landmarks_; i++)
   {
     // calc range
-    const double x_diff = landmarks_(i) - state_.x();
-    const double range = sqrt(x_diff * x_diff);
-    const double range_meas = range + range_std_ * normal_(rng_);
+    const double x_diff = landmarks_[i] - state_.x();
+    double range_meas = -1.;
+
+    if (x_diff > 0.)
+    {
+      range_meas = x_diff + range_std_ * normal_(rng_);
+    }
+
     range_meas_.ranges.push_back(range_meas);
   }
 
