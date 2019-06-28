@@ -39,6 +39,11 @@ add_executable(one_dimension_example
     )
 target_link_libraries(one_dimension_example one_dimension ${YAML_CPP_LIBRARIES})
 
+add_executable(online_slam_1d
+    src/examples/online_slam_1d.cpp
+    )
+target_link_libraries(online_slam_1d one_dimension ${YAML_CPP_LIBRARIES})
+
 # Unicycle
 add_library(unicycle_landmarks STATIC
     src/unicycle_sim/unicycle_sim.cpp

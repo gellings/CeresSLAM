@@ -1,5 +1,5 @@
 tmax: 10.
-dt: 0.04
+dt: 0.75
 seed: 1
 
 x0: [0., 3.]
@@ -20,3 +20,7 @@ range_sensor: True
 range_std: 1.
 min_range: 0.
 max_range: 50.
+
+# Online SLAM params
+# TODO
+# window_size: 10
