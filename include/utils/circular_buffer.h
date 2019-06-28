@@ -37,9 +37,10 @@ public:
     return val;
   }
 
-  T head()
+  T get_newest()
   {
-    return buf_[head_];
+    int newest_idx = (tail_ + size() - 1) % max_size_;
+    return buf_[newest_idx];
   }
 
   void reset()
@@ -98,5 +99,5 @@ private:
   size_t head_ = 0;
   size_t tail_ = 0;
   const size_t max_size_;
-  bool full_ = 0;
+  bool full_ = false;
 };
