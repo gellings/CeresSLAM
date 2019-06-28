@@ -14,6 +14,13 @@ using ceres::Solver;
 class FullSLAMEstimator : public EstimatorBase
 {
 public:
+  FullSLAMEstimator()
+  {
+    position_meas.push_back(0.);
+    position_optimized.push_back(0.);
+
+  }
+
   // t - current time (seconds)
   // z - measurement
   // R - covariance
@@ -21,8 +28,10 @@ public:
                                 const double& R)
   {
     position_stddev_ = sqrt(R);
-    position_meas.push_back(z);
-    position_optimized.push_back(z);
+    //position_meas.push_back(z);
+    //position_optimized.push_back(z);
+    position_meas.push_back(0.);
+    position_optimized.push_back(0.);
   }
 
   virtual void odometryCallback(const double& t, const double& z,
@@ -46,33 +55,34 @@ public:
 
   void solve()
   {
-    velocity_optimized = 2.;
+    velocity_optimized = 0.;
     position_optimized = position_meas;
+    //position_optimized = vector<double>(position_meas.size(), 0.);
 
     ceres::Problem problem;
 
-    for (int i = 0; i < position_meas.size(); i++)
+    problem.AddParameterBlock(&(position_optimized[0]), 1);
+    problem.SetParameterBlockConstant(&(position_optimized[0]));
+
+    for (int i = 1; i < position_meas.size(); i++)
     {
       // Create and add a cost for the position Contraint for pose i
       //problem.AddResidualBlock(
           //PositionConstraint::Create(position_meas[i], position_stddev_), NULL,
           //&position_optimized[i]);
 
-      if (i > 0)
-      {
-        // Create a cost for the velocity constraint between pose i, i-1
-        problem.AddResidualBlock(VelocityConstraint::Create(velocity_stddev),
-                                 NULL, &(position_optimized[i - 1]),
-                                 &(position_optimized[i]), &velocity_optimized);
-      }
+      // Create a cost for the velocity constraint between pose i, i-1
+      problem.AddResidualBlock(VelocityConstraint::Create(velocity_stddev),
+                               NULL, &(position_optimized[i - 1]),
+                               &(position_optimized[i]), &velocity_optimized);
 
       // Landmark constraints
       for (int lm_idx = 0; lm_idx < num_landmarks; lm_idx++)
       {
-        if (range_meas[i][lm_idx] > 0.)
+        if (range_meas[i-1][lm_idx] > 0.)
         {
           problem.AddResidualBlock(
-              RangeConstraint::Create(range_meas[i][lm_idx], range_stddev_),
+              RangeConstraint::Create(range_meas[i-1][lm_idx], range_stddev_),
               NULL, &(position_optimized[i]), &(landmarks_optimized[lm_idx]));
         }
       }

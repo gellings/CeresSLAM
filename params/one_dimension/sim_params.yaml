@@ -5,9 +5,9 @@ seed: 1
 x0: [0., 3.]
 
 # Random Landmarks
-num_landmarks: 5
+num_landmarks: 20
 xmin: 0
-xmax: 50
+xmax: 100
 
 # Sensors
 position_sensor: True
@@ -17,6 +17,6 @@ odometry_sensor: True
 velocity_std: 0.0
 
 range_sensor: True
-range_std: 0.1
+range_std: 1.
 min_range: 0.
 max_range: 50.

@@ -19,12 +19,12 @@ void printState(const vector<double>& position_meas,
   printf("pose: position    meas     optimized\n");
   for (int i = 0; i < position_meas.size(); i++)
   {
-    robot_location += true_vel;
     double optimized_err = abs(robot_location - position_optimized[i]);
 
     printf("%4d: %8.3f %8.3f %8.3f %8.3f\n", static_cast<int>(i),
            robot_location, position_meas[i], position_optimized[i],
            optimized_err);
+    robot_location += true_vel;
   }
   printf("LMs:  true    optimized     err\n");
   for (int i = 0; i < landmarks_optimized.size(); i++)
