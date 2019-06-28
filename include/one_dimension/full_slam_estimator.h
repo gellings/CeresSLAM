@@ -16,8 +16,9 @@ class FullSLAMEstimator : public EstimatorBase
 public:
   FullSLAMEstimator()
   {
-    position_meas.push_back(0.);
+    //position_meas.push_back(0.);
     position_optimized.push_back(0.);
+    position_times.push_back(0.);
 
   }
 
@@ -27,11 +28,12 @@ public:
   virtual void positionCallback(const double& t, const double& z,
                                 const double& R)
   {
-    position_stddev_ = sqrt(R);
+    //position_stddev_ = sqrt(R);
     //position_meas.push_back(z);
     //position_optimized.push_back(z);
-    position_meas.push_back(0.);
-    position_optimized.push_back(0.);
+    //position_meas.push_back(0.);
+    //position_optimized.push_back(0.);
+    //position_times.push_back(0.);
   }
 
   virtual void odometryCallback(const double& t, const double& z,
@@ -45,6 +47,8 @@ public:
   {
     range_stddev_ = sqrt(z.range_variance);
     range_meas.push_back(z.ranges);
+    position_optimized.push_back(0.);
+    position_times.push_back(t);
 
     if (num_landmarks == 0)
     {
@@ -56,7 +60,7 @@ public:
   void solve()
   {
     velocity_optimized = 0.;
-    position_optimized = position_meas;
+    //position_optimized = position_meas;
     //position_optimized = vector<double>(position_meas.size(), 0.);
 
     ceres::Problem problem;
@@ -64,17 +68,20 @@ public:
     problem.AddParameterBlock(&(position_optimized[0]), 1);
     problem.SetParameterBlockConstant(&(position_optimized[0]));
 
-    for (int i = 1; i < position_meas.size(); i++)
+    for (int i = 1; i < position_optimized.size(); i++)
     {
       // Create and add a cost for the position Contraint for pose i
       //problem.AddResidualBlock(
           //PositionConstraint::Create(position_meas[i], position_stddev_), NULL,
           //&position_optimized[i]);
 
+      const double dt = position_times[i] - position_times[i-1];
+
       // Create a cost for the velocity constraint between pose i, i-1
-      problem.AddResidualBlock(VelocityConstraint::Create(velocity_stddev),
+      problem.AddResidualBlock(VelocityConstraint::Create(dt, velocity_stddev),
                                NULL, &(position_optimized[i - 1]),
                                &(position_optimized[i]), &velocity_optimized);
+      std::cout << "i: " << i << std::endl;
 
       // Landmark constraints
       for (int lm_idx = 0; lm_idx < num_landmarks; lm_idx++)
@@ -86,6 +93,7 @@ public:
               NULL, &(position_optimized[i]), &(landmarks_optimized[lm_idx]));
         }
       }
+      std::cout << "i: " << i << std::endl;
     }
 
     ceres::Solver::Options solver_options;
@@ -96,15 +104,16 @@ public:
     Solve(solver_options, &problem, &summary);
     printf("Done.\n");
     // std::cout << summary.FullReport() << "\n";
-    std::cout << "Final odom: " << velocity_optimized << std::endl;
+    std::cout << "Optimized Velocity : " << velocity_optimized << std::endl;
   }
 
   double velocity_optimized;
   double velocity_stddev = 0.001;
 
-  double position_stddev_;
-  vector<double> position_meas;
+  //double position_stddev_;
+  //vector<double> position_meas;
   vector<double> position_optimized;
+  vector<double> position_times;
 
   int num_landmarks = 0;
   vector<double> landmarks_optimized;
