@@ -1,43 +1,13 @@
 #include <iostream>
 #include <string>
 
-#include "one_dimension/full_slam_estimator.h"
+#include "one_dimension/online_slam_estimator.h"
 #include "one_dimension/one_dimension_sim.h"
 
 #include "utils/logger.h"
 #include "utils/frame_helper.h"
 
-#include "utils/circular_buffer.h"
-
 using std::vector;
-
-void printState(//const vector<double>& position_meas,
-                const vector<double>& position_optimized,
-                const vector<double>& landmarks_optimized,
-                const vector<double>& landmarks_true)
-{
-  const double true_dt = 0.04;
-  const double true_vel = 3.;
-  double robot_location = 0.;
-  //printf("pose: position    meas     optimized\n");
-  printf("pose: position    optimized\n");
-  for (int i = 0; i < position_optimized.size(); i++)
-  {
-    double optimized_err = abs(robot_location - position_optimized[i]);
-
-    printf("%4d: %8.3f %8.3f %8.3f\n", static_cast<int>(i),
-           robot_location, position_optimized[i],
-           optimized_err);
-    robot_location += true_vel * true_dt;
-  }
-  printf("LMs:  true    optimized     err\n");
-  for (int i = 0; i < landmarks_optimized.size(); i++)
-  {
-    double lm_err = abs(landmarks_true[i] - landmarks_optimized[i]);
-        printf("%4d: %8.3f %8.3f %8.3f\n", static_cast<int>(i), landmarks_true[i],
-               landmarks_optimized[i], lm_err);
-  }
-}
 
 int main()
 {
@@ -47,11 +17,8 @@ int main()
   Logger log("/tmp/one_dim_sim.bin");
 
   // Estimator
-  FullSLAMEstimator est;
+  OnlineSLAMEstimator est;
   sim.registerEstimator(&est);
-
-  // TODO remove me
-  CircularBuffer<double> circ_buf(10);
 
   // Log landmark info
   // log.log(static_cast<double>(sim.num_landmarks_));
@@ -61,34 +28,7 @@ int main()
   {
     log.log(sim.t_);
     log.logVectors(sim.state_.arr);
-    circ_buf.put(sim.t_);
   }
-
-  //std::cout << "circ 0: " << circ_buf[0] << std::endl;
-  //std::cout << "circ 1: " << circ_buf[1] << std::endl;
-  //std::cout << "circ 9: " << circ_buf[9] << std::endl;
-  //std::cout << "circ 12: " << circ_buf[12] << std::endl;
-  for (int i = 0; i < circ_buf.size(); i++)
-  {
-    std::cout << circ_buf[i] << std::endl;
-  }
-
-  while(!circ_buf.empty())
-  {
-    std::cout << circ_buf.pop_oldest() << std::endl;
-  }
-  //printf("Initial values:\n");
-  ////printState(est.position_meas, est.position_optimized, est.landmarks_optimized,
-             ////sim.landmarks_);
-  //printState(est.position_optimized, est.landmarks_optimized,
-             //sim.landmarks_);
-
-  //est.solve();
-  //printf("Final values:\n");
-  ////printState(est.position_meas, est.position_optimized, est.landmarks_optimized,
-             ////sim.landmarks_);
-  //printState(est.position_optimized, est.landmarks_optimized,
-             //sim.landmarks_);
 
   return 0;
 }

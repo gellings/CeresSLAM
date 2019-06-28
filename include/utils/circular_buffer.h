@@ -37,6 +37,11 @@ public:
     return val;
   }
 
+  T head()
+  {
+    return buf_[head_];
+  }
+
   void reset()
   {
     head_ = tail_;
@@ -83,7 +88,7 @@ public:
     {
       throw std::out_of_range("Index out of range of buffer");
     }
-    int idx = (head_ + i) % max_size_;
+    int idx = (tail_ + i) % max_size_;
 
     return buf_[idx];
   }
