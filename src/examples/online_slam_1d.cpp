@@ -7,33 +7,10 @@
 #include "utils/logger.h"
 #include "utils/frame_helper.h"
 
-// TODO remove
-#include "utils/circular_buffer.h"
-
 using std::vector;
 
-//void printBuf(const CircularBuffer<double>& buff)
-//{
-  //std::cout << "Buffer:" << std::endl;
-  //for (int i = 0; i < buff.size(); i++)
-  //{
-    //std::cout << "i: " << i << " val: " << buff[i] << std::endl;
-  //}
-//}
 int main()
 {
-  //CircularBuffer<double> circ_buff(5);
-
-  //circ_buff.put(0.);
-  //for (int i = 0; i < 50; i++)
-  //{
-    //double last = circ_buff.get_newest();
-    //std::cout << "last: " << last << std::endl;
-    //circ_buff.put(static_cast<double>(i));
-    //circ_buff.put(last + 1.);
-    //printBuf(circ_buff);
-  //}
-
   std::string sim_params_yaml_file = "../params/one_dimension/sim_params.yaml";
   bool show_progress_bar = true;
   OneDimensionSimulator sim(sim_params_yaml_file, show_progress_bar);

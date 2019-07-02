@@ -16,8 +16,6 @@ public:
 
   void put(T item)
   {
-    //std::cout << "b4 put head_: " << head_ << " tail: " << tail_ << std::endl;
-    //std::cout << "overwriting: " << buf_[head_].second << std::endl;
     buf_[head_] = item;
 
     if (full_)
@@ -28,9 +26,6 @@ public:
     head_ = (head_ + 1) % max_size_;
 
     full_ = head_ == tail_;
-    //std::cout << "after put head_: " << head_ << " tail: " << tail_ << std::endl;
-    //std::cout << "put: " << item << std::endl;
-    //std::cout << "retrieve: " << get_newest() << std::endl;
   }
 
   T pop_oldest()
@@ -48,7 +43,6 @@ public:
   {
     int newest_idx = (tail_ + size() - 1) % max_size_;
     return buf_[newest_idx];
-    //return buf_[size() - 1];
   }
 
   void reset()
