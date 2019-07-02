@@ -5,6 +5,7 @@
 #include "one_dimension/factors/range_constraint.h"
 #include "one_dimension/factors/position_constraint.h"
 #include "one_dimension/factors/velocity_constraint.h"
+#include "one_dimension/factors/landmark_anchor.h"
 
 #include <utility>
 #include "utils/circular_buffer.h"
@@ -16,7 +17,7 @@ using ceres::Solver;
 class OnlineSLAMEstimator : public EstimatorBase
 {
 public:
-  OnlineSLAMEstimator() : optimized_time_pos(25)
+  OnlineSLAMEstimator() : optimized_time_pos(10), range_meas(9)
   {
     velocity_optimized = 0.;
     optimized_time_pos.put(std::make_pair(0., 0.));
@@ -52,12 +53,35 @@ public:
   virtual void rangeCallback(const double& t, const RangeMeas& z)
   {
     range_stddev_ = sqrt(z.range_variance);
-    range_meas.push_back(z.ranges);
+    //range_meas.push_back(z.ranges);
+    range_meas.put(z.ranges);
 
-    auto last_pos = optimized_time_pos.get_newest();
-    const double dt = t - last_pos.first;
-    const double predicted_x = last_pos.second + velocity_optimized * dt;
+    //auto last_pos = optimized_time_pos.get_newest();
+    //const double dt = t - last_pos.first;
+    //const double predicted_x = last_pos.second + velocity_optimized * dt;
+
+    const double last_pos_x = optimized_time_pos.get_newest().second;
+    const double last_pos_t = optimized_time_pos.get_newest().first;
+    const double dt = t - last_pos_t;
+    const double predicted_x = last_pos_x + velocity_optimized * dt;
+    //std::cout << "BEFORE" << std::endl;
+    //for (int i = 0; i < optimized_time_pos.size(); i++)
+    //{
+      //std::cout << optimized_time_pos[i].second << std::endl;
+    //}
+    //std::cout << "AFTER" << std::endl;
     optimized_time_pos.put(std::make_pair(t, predicted_x));
+    //for (int i = 0; i < optimized_time_pos.size(); i++)
+    //{
+      //std::cout << optimized_time_pos[i].second << std::endl;
+    //}
+    //std::cout << "last pos: " << optimized_time_pos.get_newest().second << std::endl;
+    //std::cout << "put: " << predicted_x << std::endl;
+    //static double putter = 0.;
+    //double putter = last_pos.second + 1.;
+    //optimized_time_pos.put(std::make_pair(t, putter));
+    //std::cout << "last pos: " << optimized_time_pos.get_newest().second << std::endl;
+    //std::cout << "just put: " << putter << std::endl;
 
     if (num_landmarks == 0)
     {
@@ -76,22 +100,49 @@ public:
     // TODO make an anchor for x states and landmarks, so it can't differ very
     // much from optimization to optimization. This may be the same with the
     // velocity
-    problem.AddParameterBlock(&(optimized_time_pos[0].second), 1);
-    problem.SetParameterBlockConstant(&(optimized_time_pos[0].second));
+    //problem.AddParameterBlock(&(optimized_time_pos[0].second), 1);
+    //problem.SetParameterBlockConstant(&(optimized_time_pos[0].second));
+
+    printf("\n\nNEXT ITER\n");
+    std::cout << "pos size: " << optimized_time_pos.size() << std::endl;
+    std::cout << "ranges size: " << range_meas.size() << std::endl;
+    //for (int i = 0; i < optimized_time_pos.size(); i++)
+    //{
+      //std::cout << optimized_time_pos[i].second << std::endl;
+    //}
 
     for (int i = 1; i < optimized_time_pos.size(); i++)
     {
       // Create a cost for the velocity constraint between pose i, i-1
       const double dt =
           optimized_time_pos[i].first - optimized_time_pos[i - 1].first;
+      //std::cout << "i-1: " << optimized_time_pos[i -1].second << " i: " << optimized_time_pos[i].second << std::endl;
       problem.AddResidualBlock(VelocityConstraint::Create(dt, velocity_stddev),
                                NULL, &(optimized_time_pos[i - 1].second),
                                &(optimized_time_pos[i].second),
                                &velocity_optimized);
+      if (i == 1)
+      {
+        problem.AddResidualBlock(
+            LandmarkAnchor::Create(optimized_time_pos[0].second, 0.001), NULL,
+            &(optimized_time_pos[0].second));
+      }
 
       // Landmark constraints
       for (int lm_idx = 0; lm_idx < num_landmarks; lm_idx++)
       {
+        if (i == 9)
+        {
+           //Once per landmark make an anchor
+          problem.AddResidualBlock(
+              LandmarkAnchor::Create(landmarks_optimized[lm_idx], 0.1), NULL,
+              &(landmarks_optimized[lm_idx]));
+          //std::cout << "added lm: " << lm_idx << " pos: " << landmarks_optimized[lm_idx] << std::endl;
+
+          //problem.AddParameterBlock(&(landmarks_optimized[lm_idx]), 1);
+          //problem.SetParameterBlockConstant(&(landmarks_optimized[lm_idx]));
+        }
+
         if (range_meas[i - 1][lm_idx] > 0.)
         {
           problem.AddResidualBlock(
@@ -109,9 +160,9 @@ public:
     // printf("Solving...\n");
     Solve(solver_options, &problem, &summary);
     // printf("Done.\n");
-    // std::cout << summary.FullReport() << "\n";
+    //std::cout << summary.FullReport() << "\n";
     // std::cout << "Optimized Velocity : " << velocity_optimized << std::endl;
-    //printState();
+    // printState();
   }
 
   double getEstimatedX()
@@ -138,6 +189,7 @@ public:
   vector<double> landmarks_optimized;
 
   double range_stddev_;
-  vector<vector<double>> range_meas;
+  //vector<vector<double>> range_meas;
+  CircularBuffer<vector<double>> range_meas;
 };
 
