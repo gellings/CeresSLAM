@@ -50,12 +50,12 @@ add_library(unicycle_landmarks STATIC
 )
 target_include_directories(unicycle_landmarks PUBLIC
     include)
-target_link_libraries(unicycle_landmarks ${YAML_CPP_LIBRARIES})
+target_link_libraries(unicycle_landmarks ${CERES_LIBRARIES} ${YAML_CPP_LIBRARIES})
 
 # Build Examples
 include_directories(include ${EIGEN3_INCLUDE_DIRS})
-add_executable(unicycle_sim
-    src/examples/unicycle_sim.cpp
+add_executable(unicycle_full_slam
+    src/unicycle_sim/full_slam.cpp
     )
-target_link_libraries(unicycle_sim unicycle_landmarks ${YAML_CPP_LIBRARIES})
+target_link_libraries(unicycle_full_slam unicycle_landmarks ${YAML_CPP_LIBRARIES})
 
