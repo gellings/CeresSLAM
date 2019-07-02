@@ -11,7 +11,6 @@
 #include "utils/circular_buffer.h"
 
 using std::vector;
-
 using ceres::Solver;
 
 class OnlineSLAMEstimator : public EstimatorBase
@@ -70,14 +69,35 @@ public:
     solve();
   }
 
-  void solve()
+  void addAnchors(ceres::Problem& problem)
   {
-    ceres::Problem problem;
+    // Anchor oldest position value in optimization
+    problem.AddResidualBlock(
+        LandmarkAnchor::Create(optimized_time_pos[0].second, 0.001), NULL,
+        &(optimized_time_pos[0].second));
 
-    // TODO instead only lock down 0. at the beginning
-    // problem.AddParameterBlock(&(optimized_time_pos[0].second), 1);
-    // problem.SetParameterBlockConstant(&(optimized_time_pos[0].second));
+    // Anchor velocity estimate so it doesnt change drastically from
+    // optimization to optimization
+    if (velocity_optimized != 0.)
+    {
+      problem.AddResidualBlock(LandmarkAnchor::Create(velocity_optimized, 1.0),
+                               NULL, &(velocity_optimized));
+    }
 
+    // Once per landmark make an anchor
+    for (int lm_idx = 0; lm_idx < landmarks_optimized.size(); lm_idx++)
+    {
+      if (landmarks_optimized[lm_idx] != 0.)
+      {
+        problem.AddResidualBlock(
+            LandmarkAnchor::Create(landmarks_optimized[lm_idx], 0.1), NULL,
+            &(landmarks_optimized[lm_idx]));
+      }
+    }
+  }
+
+  void addVelocityFactors(ceres::Problem &problem)
+  {
     for (int i = 1; i < optimized_time_pos.size(); i++)
     {
       // Create a cost for the velocity constraint between pose i, i-1
@@ -87,30 +107,18 @@ public:
                                NULL, &(optimized_time_pos[i - 1].second),
                                &(optimized_time_pos[i].second),
                                &velocity_optimized);
-      if (i == 9)
-      {
-        // Anchor oldest position value in optimization
-        problem.AddResidualBlock(
-            LandmarkAnchor::Create(optimized_time_pos[0].second, 0.001), NULL,
-            &(optimized_time_pos[0].second));
+    }
+    
+  }
 
-        // Anchor velocity estimate so it doesnt change drastically from optimization to optimization
-        problem.AddResidualBlock(
-            LandmarkAnchor::Create(velocity_optimized, 1.0), NULL,
-            &(velocity_optimized));
-      }
-
+  void addRangeFactors(ceres::Problem &problem)
+  {
+    for (int i = 1; i < optimized_time_pos.size(); i++)
+    {
       // Landmark constraints
       for (int lm_idx = 0; lm_idx < num_landmarks; lm_idx++)
       {
-        if (i == 9)
-        {
-          // Once per landmark make an anchor
-          problem.AddResidualBlock(
-              LandmarkAnchor::Create(landmarks_optimized[lm_idx], 0.1), NULL,
-              &(landmarks_optimized[lm_idx]));
-        }
-
+        // If the range measurement is valid
         if (range_meas[i - 1][lm_idx] > 0.)
         {
           problem.AddResidualBlock(
@@ -120,17 +128,20 @@ public:
         }
       }
     }
+  }
+
+  void solve()
+  {
+    ceres::Problem problem;
+
+    addAnchors(problem);
+    addVelocityFactors(problem);
+    addRangeFactors(problem);
 
     ceres::Solver::Options solver_options;
-    solver_options.minimizer_progress_to_stdout = false;
 
     Solver::Summary summary;
-    // printf("Solving...\n");
     Solve(solver_options, &problem, &summary);
-    // printf("Done.\n");
-    // std::cout << summary.FullReport() << "\n";
-    // std::cout << "Optimized Velocity : " << velocity_optimized << std::endl;
-    // printState();
   }
 
   double getEstimatedX()
