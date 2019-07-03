@@ -1,15 +1,15 @@
-tmax: 10.
+tmax: 5.
 dt: 0.5
-seed: 0
+seed: 1
 
-x0: [0., 0., 0., 0.4, 0.3]
+x0: [0., 0., 0., 0.0, 0.3]
 
 # Random Landmarks
 num_landmarks: 5
-xmin: -5
-xmax: 5
-ymin: -5
-ymax: 5
+xmin: -5.
+xmax: 5.
+ymin: -5.
+ymax: 5.
 
 # Sensors
 odometry_sensor: True

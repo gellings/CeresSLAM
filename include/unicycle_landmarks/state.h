@@ -15,6 +15,11 @@ struct State
     SIZE = 5
   };
 
+  State()
+  {
+    arr.setZero();
+  }
+
   Eigen::Matrix<double, SIZE, 1> arr;
 
   const double& x() const { return arr(X); }

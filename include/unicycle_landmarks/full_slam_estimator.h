@@ -10,6 +10,10 @@
 #include "unicycle_landmarks/state.h"
 
 #include "unicycle_landmarks/factors/odometry_factor.h"
+#include "unicycle_landmarks/factors/range_bearing_factor.h"
+#include "unicycle_landmarks/factors/motion_model_factor.h"
+#include "unicycle_landmarks/factors/se2_parameterization.h"
+//#include "unicycle_landmarks/factors/angle_local_parameterization.h"
 
 using Eigen::Matrix2d;
 using Eigen::Vector2d;
@@ -17,6 +21,9 @@ using std::vector;
 
 using ceres::Solve;
 using ceres::Solver;
+
+using std::cout;
+using std::endl;
 
 class FullSLAMEstimator : public EstimatorBase
 {
@@ -27,16 +34,24 @@ public:
 
     velocities_stddev(0) = 0.1;
     velocities_stddev(1) = 0.1;
+
+    states_optimized.push_back(State());
   }
 
   void printState()
   {
-    printf("i:  meas_v meas_w  optimized_v optimized_w\n");
+    printf("i:  meas_v meas_w  optimized_v optimized_w x  y theta\n");
     for (int i = 0; i < odometry_meas.size(); i++)
     {
-      printf("%5d: %8.3f %8.3f %8.3f %8.3f\n", i, odometry_meas[i](0),
-             odometry_meas[i](1), velocities_optimized(0),
-             velocities_optimized(1));
+      State state = states_optimized[i];
+      printf("%5d: %8.3f %8.3f %8.3f%8.3f%8.3f   %8.3f %8.3f\n", i,
+             odometry_meas[i](0), odometry_meas[i](1), velocities_optimized(0),
+             velocities_optimized(1), state.x(), state.y(), state.theta());
+    }
+    printf("Landmarks: \n");
+    for (Vector2d lm : landmarks_optimized)
+    {
+      cout << lm << endl;
     }
   }
 
@@ -50,13 +65,40 @@ public:
 
   void rangeBearingCallback(const double& t, const RangeBearingMeas& z)
   {
+    states_optimized.push_back(State());
     rb_meas.push_back(z);
-    // std::cout << "rbs callback" << std::endl;
-    // for (unsigned int i = 0; i < z.ranges.size(); i++)
-    //{
-    // std::cout << "lm #" << i << " range: " << z.ranges[i]
-    //<< " bear: " << z.bearings[i] << std::endl;
-    //}
+  }
+
+  void addParameterBlocks(ceres::Problem& problem)
+  {
+    ceres::LocalParameterization* se2_local_parameterization =
+        SE2LocalParameterization::Create();
+    //ceres::LocalParameterization* angle_local_parameterization =
+        //AngleLocalParameterization::Create();
+
+    for (int i = 0; i < states_optimized.size(); i++)
+    {
+      problem.AddParameterBlock(states_optimized[i].arr.data(), 3,
+                                se2_local_parameterization);
+      //problem.AddParameterBlock(states_optimized[i].arr.data(), 2);
+      //problem.AddParameterBlock(states_optimized[i].arr.data() + 2, 1,
+                                //angle_local_parameterization);
+    }
+
+    problem.SetParameterBlockConstant(states_optimized[0].arr.data());
+    //problem.SetParameterBlockConstant(states_optimized[0].arr.data() + 2);
+  }
+
+  void addMotionModelFactors(ceres::Problem& problem)
+  {
+    const double dt = 0.5;
+    for (int i = 1; i < states_optimized.size(); i++)
+    {
+      problem.AddResidualBlock(MotionModelFactor::Create(dt), NULL,
+                               states_optimized[i - 1].arr.data(),
+                               states_optimized[i].arr.data(),
+                               velocities_optimized.data());
+    }
   }
 
   void addOdometryFactors(ceres::Problem& problem)
@@ -69,12 +111,54 @@ public:
     }
   }
 
+  void addRangeBearingFactors(ceres::Problem& problem)
+  {
+    const int num_landmarks = rb_meas[0].ranges.size();
+    //landmarks_optimized = vector<Vector2d>(num_landmarks, Vector2d(10., 0.));
+    landmarks_optimized = vector<Vector2d>(num_landmarks, Vector2d(-5., 0.));
+
+    for (int i = 0; i < rb_meas.size(); i++)
+    {
+      for (int lm_idx = 0; lm_idx < num_landmarks; lm_idx++)
+      {
+        const double range_meas = rb_meas[i].ranges[lm_idx];
+        // const double range_var = rb_meas[i].range_variance;
+        const double range_var = 0.001;
+        //cout << "range: " << range_meas << endl;
+
+        const double bearing_meas = rb_meas[i].bearings[lm_idx];
+        // const double bearing_var = rb_meas[i].bearing_variance;
+        const double bearing_var = 0.001;
+        //cout << "bear: " << bearing_meas << endl;
+
+        // Vector2d curr_lm = landmarks_optimized[lm_idx];
+        problem.AddResidualBlock(
+            RangeBearingFactor::Create(range_meas, range_var, bearing_meas,
+                                       bearing_var),
+            NULL, states_optimized[i + 1].arr.data(),
+            landmarks_optimized[lm_idx].data());
+      }
+
+      if (i == 0)
+      {
+        //problem.SetParameterBlockConstant(landmarks_optimized[lm_idx].data());
+        //velocities_optimized(0) = 0.3;
+        //velocities_optimized(1) = 0.6;
+        //problem.SetParameterBlockConstant(velocities_optimized.data());
+      }
+    }
+  }
+
   void solve()
   {
-    printState();
     ceres::Problem problem;
 
+    addParameterBlocks(problem);
+    addMotionModelFactors(problem);
     addOdometryFactors(problem);
+    addRangeBearingFactors(problem);
+
+    printState();
 
     Solver::Options solver_options;
     Solver::Summary summary;
