@@ -30,5 +30,7 @@ int main()
   }
   est.solve();
 
+  std::cout << "True Landmarks: " << sim.landmarks_ << std::endl;
+
   return 0;
 }
