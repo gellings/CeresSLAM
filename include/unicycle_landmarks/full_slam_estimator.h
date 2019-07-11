@@ -73,20 +73,15 @@ public:
   {
     ceres::LocalParameterization* se2_local_parameterization =
         SE2LocalParameterization::Create();
-    //ceres::LocalParameterization* angle_local_parameterization =
-        //AngleLocalParameterization::Create();
 
     for (int i = 0; i < states_optimized.size(); i++)
     {
       problem.AddParameterBlock(states_optimized[i].arr.data(), 3,
                                 se2_local_parameterization);
-      //problem.AddParameterBlock(states_optimized[i].arr.data(), 2);
-      //problem.AddParameterBlock(states_optimized[i].arr.data() + 2, 1,
-                                //angle_local_parameterization);
     }
 
+    // Start from 0
     problem.SetParameterBlockConstant(states_optimized[0].arr.data());
-    //problem.SetParameterBlockConstant(states_optimized[0].arr.data() + 2);
   }
 
   void addMotionModelFactors(ceres::Problem& problem)
@@ -155,7 +150,7 @@ public:
 
     addParameterBlocks(problem);
     addMotionModelFactors(problem);
-    addOdometryFactors(problem);
+    //addOdometryFactors(problem);
     addRangeBearingFactors(problem);
 
     printState();

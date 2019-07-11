@@ -182,15 +182,15 @@ void UnicycleSimulator::updateOdomSensor()
 void UnicycleSimulator::initRangeBearingSensor()
 {
   get_yaml_node("range_std", param_filename_, rbs_range_std_);
-  get_yaml_node("min_range", param_filename_, rbs_min_range_);
-  get_yaml_node("max_range", param_filename_, rbs_max_range_);
+  //get_yaml_node("min_range", param_filename_, rbs_min_range_);
+  //get_yaml_node("max_range", param_filename_, rbs_max_range_);
   get_yaml_node("bearing_std", param_filename_, rbs_bearing_std_);
 
   rbs_meas_.reserve(num_landmarks_);
   rbs_meas_.range_variance = rbs_range_std_ * rbs_range_std_;
   rbs_meas_.bearing_variance = rbs_bearing_std_ * rbs_bearing_std_;
-  rbs_meas_.min_range = rbs_min_range_;
-  rbs_meas_.max_range = rbs_max_range_;
+  //rbs_meas_.min_range = rbs_min_range_;
+  //rbs_meas_.max_range = rbs_max_range_;
 }
 
 void UnicycleSimulator::updateRangeBearingSensor()

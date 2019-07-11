@@ -40,8 +40,8 @@ struct MotionModelFactor
 
     const Eigen::Matrix<T, 2, 1> p_diff_a = R_world_a * p_diff_world;
 
-    residual[0] = (((p_diff_a(0)) / dt) - velocities[0]) / 0.1;
-    residual[1] = (((p_diff_a(1)) / dt)) / 0.01;
+    residual[0] = (((p_diff_a(0)) / dt) - velocities[0]) / 0.00001;
+    residual[1] = (((p_diff_a(1)) / dt)) / 0.00001;
 
     const T theta_b = state_t[2];
     const T omega_hat = NormalizeAngle(theta_b - theta_a) / dt;
