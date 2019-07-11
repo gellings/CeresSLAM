@@ -17,8 +17,8 @@ velocity_std: 0.01
 omega_std: 0.01
 
 range_bearing_sensor: True
-range_std: 0.
+range_std: 0.01
 #min_range: 0.
 #max_range: 10.
-bearing_std: 0.
+bearing_std: 0.01
 # min_bearing: 0. # TODO bearing limits?

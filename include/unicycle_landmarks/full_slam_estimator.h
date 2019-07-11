@@ -13,7 +13,6 @@
 #include "unicycle_landmarks/factors/range_bearing_factor.h"
 #include "unicycle_landmarks/factors/motion_model_factor.h"
 #include "unicycle_landmarks/factors/se2_parameterization.h"
-//#include "unicycle_landmarks/factors/angle_local_parameterization.h"
 
 using Eigen::Matrix2d;
 using Eigen::Vector2d;
@@ -55,9 +54,6 @@ public:
     }
   }
 
-  // t - current time (seconds)
-  // z - measurement
-  // R - covariance
   void odometryCallback(const double& t, const Vector2d& z, const Matrix2d& R)
   {
     odometry_meas.push_back(z);
@@ -80,7 +76,7 @@ public:
                                 se2_local_parameterization);
     }
 
-    // Start from 0
+    // Assume initial state is known perfectly
     problem.SetParameterBlockConstant(states_optimized[0].arr.data());
   }
 
@@ -109,37 +105,23 @@ public:
   void addRangeBearingFactors(ceres::Problem& problem)
   {
     const int num_landmarks = rb_meas[0].ranges.size();
-    //landmarks_optimized = vector<Vector2d>(num_landmarks, Vector2d(10., 0.));
-    landmarks_optimized = vector<Vector2d>(num_landmarks, Vector2d(-5., 0.));
+    landmarks_optimized = vector<Vector2d>(num_landmarks, Vector2d(0., 0.));
 
     for (int i = 0; i < rb_meas.size(); i++)
     {
       for (int lm_idx = 0; lm_idx < num_landmarks; lm_idx++)
       {
         const double range_meas = rb_meas[i].ranges[lm_idx];
-        // const double range_var = rb_meas[i].range_variance;
-        const double range_var = 0.001;
-        //cout << "range: " << range_meas << endl;
+        const double range_var = rb_meas[i].range_variance;
 
         const double bearing_meas = rb_meas[i].bearings[lm_idx];
-        // const double bearing_var = rb_meas[i].bearing_variance;
-        const double bearing_var = 0.001;
-        //cout << "bear: " << bearing_meas << endl;
+        const double bearing_var = rb_meas[i].bearing_variance;
 
-        // Vector2d curr_lm = landmarks_optimized[lm_idx];
         problem.AddResidualBlock(
             RangeBearingFactor::Create(range_meas, range_var, bearing_meas,
                                        bearing_var),
             NULL, states_optimized[i + 1].arr.data(),
             landmarks_optimized[lm_idx].data());
-      }
-
-      if (i == 0)
-      {
-        //problem.SetParameterBlockConstant(landmarks_optimized[lm_idx].data());
-        //velocities_optimized(0) = 0.3;
-        //velocities_optimized(1) = 0.6;
-        //problem.SetParameterBlockConstant(velocities_optimized.data());
       }
     }
   }
@@ -150,7 +132,7 @@ public:
 
     addParameterBlocks(problem);
     addMotionModelFactors(problem);
-    //addOdometryFactors(problem);
+    // addOdometryFactors(problem);
     addRangeBearingFactors(problem);
 
     printState();
@@ -165,8 +147,6 @@ public:
   vector<Vector2d> odometry_meas;
   vector<RangeBearingMeas> rb_meas;
 
-  // double velocity_optimized;
-  // double omega_optimized;
   Vector2d velocities_optimized;
   Vector2d velocities_stddev;
 
